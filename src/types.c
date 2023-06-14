@@ -344,6 +344,7 @@ reset_netdef(NetplanNetDefinition* netdef, NetplanDefType new_type, NetplanBacke
     netdef->sriov_vlan_filter = FALSE;
     netdef->sriov_explicit_vf_count = G_MAXUINT; /* 0 is a valid number of VFs */
     FREE_AND_NULLIFY(netdef->embedded_switch_mode);
+    FREE_AND_NULLIFY(netdef->bind_driver);
 
     reset_ovs_settings(&netdef->ovs_settings);
     reset_backend_settings(&netdef->backend_settings);
@@ -564,6 +565,13 @@ _netplan_netdef_get_embedded_switch_mode(const NetplanNetDefinition* netdef, cha
 {
     g_assert(netdef);
     return netplan_copy_string(netdef->embedded_switch_mode, out_buffer, out_buf_size);
+}
+
+ssize_t
+netplan_netdef_get_bind_driver(const NetplanNetDefinition* netdef, char* out_buffer, size_t out_buf_size)
+{
+    g_assert(netdef);
+    return netplan_copy_string(netdef->bind_driver, out_buffer, out_buf_size);
 }
 
 gboolean

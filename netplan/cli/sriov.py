@@ -160,23 +160,39 @@ class PCIDevice(object):
         return self.pci_addr
 
 
-def bind_vfs(vfs: typing.Iterable[PCIDevice], driver):
+def bind_vfs(vfs: typing.Iterable[PCIDevice], pf_driver: str, driver: str):
     """Bind unbound VFs to driver."""
     bound_vfs = []
     for vf in vfs:
-        if not vf.bound:
-            with open("/sys/bus/pci/drivers/{}/bind".format(driver), "wt") as f:
-                f.write(vf.pci_addr)
-                bound_vfs.append(vf)
+        print(f"Binding {vf.pci_addr} to driver: {driver}")
+        if vf.bound:
+            if vf.driver == driver:
+                # If the VF is already bound to the desired driver we can skip it.
+                continue
+            else:
+                # If it's bound to another driver we want to unbind it first.
+                unbind_vfs([vf])
+        
+        # Use driver_override to force the desired driver:
+        # https://www.kernel.org/doc/Documentation/ABI/testing/sysfs-bus-platform
+        with open("/sys/bus/pci/devices/{}/driver_override".format(vf.pci_addr), "wt") as f:
+            f.write(driver)
+        
+        # Finally, open /bind
+        with open("/sys/bus/pci/drivers/{}/bind".format(driver), "wt") as f:
+            print("BINDING!")
+            f.write(vf.pci_addr)
+            bound_vfs.append(vf)
     return bound_vfs
 
 
-def unbind_vfs(vfs: typing.Iterable[PCIDevice], driver) -> typing.Iterable[PCIDevice]:
+def unbind_vfs(vfs: typing.Iterable[PCIDevice]) -> typing.Iterable[PCIDevice]:
     """Unbind bound VFs from driver."""
     unbound_vfs = []
     for vf in vfs:
         if vf.bound:
-            with open("/sys/bus/pci/drivers/{}/unbind".format(driver), "wt") as f:
+            print(f"Unbinding {vf.pci_addr}")
+            with open("/sys/bus/pci/drivers/{}/unbind".format(vf.driver), "wt") as f:
                 f.write(vf.pci_addr)
                 unbound_vfs.append(vf)
     return unbound_vfs
@@ -241,7 +257,9 @@ def get_vf_count_and_functions(interfaces, np_state,
     """
     for nid, netdef in np_state.ethernets.items():
         if netdef.sriov_link and _get_target_interface(interfaces, np_state, netdef.sriov_link.id, pfs):
-            vfs[nid] = None
+            vfs[nid] = {
+                'bind_driver': netdef.bind_driver
+            }
 
         try:
             count = netdef.vf_count
@@ -397,6 +415,12 @@ def apply_sriov_config(config_manager, rootdir='/'):
 
     get_vf_count_and_functions(
         interfaces, np_state, vf_counts, vfs, pfs)
+    
+    print(vfs)
+    print(pfs)
+    print(vf_counts)
+
+
 
     # setup the required number of VFs per PF
     # at the same time store which PFs got changed in case the NICs
@@ -426,7 +450,10 @@ def apply_sriov_config(config_manager, rootdir='/'):
     # XXX: does matching those even make sense?
     for vf in vfs:
         netdef = np_state[vf]
+        print(netdef.id)
+        print(netdef.bind_driver)
         if netdef.has_match:
+            print("HAS MATCH")
             # right now we only match by name, as I don't think matching per
             # driver and/or macaddress makes sense
             # TODO: print warning if other matches are provided
@@ -437,8 +464,11 @@ def apply_sriov_config(config_manager, rootdir='/'):
                         raise ConfigurationError('matched more than one interface for a VF device: %s' % vf)
                     vfs[vf] = interface
         else:
+            print("HAS NO MATCH")
             if vf in interfaces:
                 vfs[vf] = vf
+    
+    print(vfs)
 
     # Walk the SR-IOV PFs and check if we need to change the eswitch mode
     for netdef_id, iface in pfs.items():
@@ -452,11 +482,11 @@ def apply_sriov_config(config_manager, rootdir='/'):
                 if pcidev.vfs:
                     rebind_delayed = netdef.delay_virtual_functions_rebind
                     try:
-                        unbind_vfs(pcidev.vfs, pcidev.driver)
+                        unbind_vfs(pcidev.vfs)
                         pcidev.devlink_set('eswitch', 'mode', eswitch_mode)
                     finally:
                         if not rebind_delayed:
-                            bind_vfs(pcidev.vfs, pcidev.driver)
+                            bind_vfs(pcidev.vfs, pcidev.driver, pcidev.driver) #"vfio-pci")
 
     filtered_vlans_set = set()
     for vlan, netdef in np_state.vlans.items():

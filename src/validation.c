@@ -472,6 +472,11 @@ validate_sriov_rules(const NetplanParser* npp, NetplanNetDefinition* nd, GError*
             valid = yaml_error(npp, node, error, "%s: This is not a SR-IOV PF", nd->id);
             goto sriov_rules_error;
         }
+
+        if (nd->bind_driver != NULL && nd->sriov_link == NULL) {
+            valid = yaml_error(npp, node, error, "%s: This is not a SR-IOV VF", nd->id);
+            goto sriov_rules_error;
+        }
     }
     valid = TRUE;
 

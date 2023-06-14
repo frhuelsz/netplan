@@ -2756,6 +2756,7 @@ static const mapping_entry_handler ethernet_def_handlers[] = {
     PHYSICAL_LINK_HANDLERS,
     {"auth", YAML_MAPPING_NODE, {.map={.custom=handle_auth}}},
     {"link", YAML_SCALAR_NODE, {.generic=handle_netdef_id_ref}, netdef_offset(sriov_link)},
+    {"bind-driver", YAML_SCALAR_NODE, {.generic=handle_netdef_str}, netdef_offset(bind_driver)},
     {"virtual-function-count", YAML_SCALAR_NODE, {.generic=handle_netdef_guint}, netdef_offset(sriov_explicit_vf_count)},
     {"embedded-switch-mode", YAML_SCALAR_NODE, {.generic=handle_embedded_switch_mode}, netdef_offset(embedded_switch_mode)},
     {"delay-virtual-functions-rebind", YAML_SCALAR_NODE, {.generic=handle_netdef_bool}, netdef_offset(sriov_delay_virtual_functions_rebind)},

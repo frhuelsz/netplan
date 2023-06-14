@@ -46,5 +46,5 @@ class NetplanSriovRebind(utils.NetplanCommand):
             if not pcidev.is_pf:
                 logging.warning('{} does not seem to be a SR-IOV physical function'.format(iface))
                 continue
-            bound_vfs = bind_vfs(pcidev.vfs, pcidev.driver)
+            bound_vfs = bind_vfs(pcidev.vfs, pcidev.driver, pcidev.driver)
             logging.info('{}: bound {} VFs'.format(pcidev, len(bound_vfs)))

@@ -771,8 +771,11 @@ _serialize_yaml(
     YAML_STRING(def, event, emitter, "activation-mode", def->activation_mode);
 
     /* SR-IOV */
-    if (def->sriov_link)
+    if (def->sriov_link) {
         YAML_STRING(def, event, emitter, "link", def->sriov_link->id);
+        YAML_STRING(def, event, emitter, "bind-driver", def->bind_driver);
+    }
+    
     YAML_UINT_DEFAULT(def, event, emitter, "virtual-function-count", def->sriov_explicit_vf_count, G_MAXUINT);
     YAML_STRING(def, event, emitter, "embedded-switch-mode", def->embedded_switch_mode);
     YAML_BOOL_TRUE(def, event, emitter, "delay-virtual-functions-rebind",

@@ -330,6 +330,9 @@ class State:
         lib.netplan_netdef_get_embedded_switch_mode.argtypes = [_NetplanNetDefinitionP]
         lib.netplan_netdef_get_embedded_switch_mode.restype = c_char_p
 
+        lib.netplan_netdef_get_bind_driver.argtypes = [_NetplanNetDefinitionP, c_char_p, c_size_t]
+        lib.netplan_netdef_get_bind_driver.restype = c_ssize_t
+
         lib.netplan_netdef_get_delay_virtual_functions_rebind.argtypes = [_NetplanNetDefinitionP]
         lib.netplan_netdef_get_delay_virtual_functions_rebind.restype = c_int
 
@@ -593,6 +596,10 @@ class NetDefinition:
     def embedded_switch_mode(self):
         mode = lib.netplan_netdef_get_embedded_switch_mode(self._ptr)
         return mode and mode.decode('utf-8')
+    
+    @property
+    def bind_driver(self):
+        return _string_realloc_call_no_error(lambda b: lib.netplan_netdef_get_bind_driver(self._ptr, b, len(b)))
 
     @property
     def delay_virtual_functions_rebind(self):

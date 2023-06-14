@@ -326,6 +326,8 @@ struct netplan_net_definition {
     NetplanNetDefinition* sriov_link;
     gboolean sriov_vlan_filter;
     guint sriov_explicit_vf_count;
+    /* this property is only valid for SR-IOV virtual functions */
+    char* bind_driver;
 
     /* these properties are only valid for OpenVSwitch */
     /* netplan-feature: openvswitch */
